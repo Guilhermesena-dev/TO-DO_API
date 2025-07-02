@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TO-DO App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+    form {
+      display: flex;
+      margin-bottom: 15px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px 0 0 4px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 0 4px 4px 0;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+    }
+    li.done span {
+      text-decoration: line-through;
+      color: #888;
+    }
+    li button {
+      margin-left: auto;
+      background: transparent;
+      color: #dc3545;
+      font-size: 1rem;
+    }
+    li input[type="checkbox"] {
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Minha Lista de Tarefas</h1>
+    <form id="task-form">
+      <input type="text" id="new-task" placeholder="Nova tarefa..." required>
+      <button type="submit">Adicionar</button>
+    </form>
+    <ul id="task-list"></ul>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/tasks'; // ajuste a porta se necessário
+    const listEl = document.getElementById('task-list');
+    const formEl = document.getElementById('task-form');
+    const inputEl = document.getElementById('new-task');
+
+    // Carrega tarefas existentes
+    async function loadTasks() {
+      const res = await fetch(API_URL);
+      const tasks = await res.json();
+      listEl.innerHTML = '';
+      tasks.forEach(renderTask);
+    }
+
+    // Renderiza um item na lista
+    function renderTask(task) {
+      const li = document.createElement('li');
+      li.dataset.id = task.id;
+      if (task.done) li.classList.add('done');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = task.done;
+      checkbox.addEventListener('change', () => toggleDone(task.id, checkbox.checked));
+
+      const span = document.createElement('span');
+      span.textContent = task.title;
+
+      const btnDel = document.createElement('button');
+      btnDel.textContent = '✕';
+      btnDel.addEventListener('click', () => deleteTask(task.id));
+
+      li.append(checkbox, span, btnDel);
+      listEl.appendChild(li);
+    }
+
+    // Adiciona nova tarefa
+    formEl.addEventListener('submit', async e => {
+      e.preventDefault();
+      const title = inputEl.value.trim();
+      if (!title) return;
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      inputEl.value = '';
+      loadTasks();
+    });
+
+    // Alterna estado done
+    async function toggleDone(id, done) {
+      await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done })
+      });
+      loadTasks();
+    }
+
+    // Deleta tarefa
+    async function deleteTask(id) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      loadTasks();
+    }
+
+    // Inicializa
+    loadTasks();
+  </script>
+</body>
+</html>
